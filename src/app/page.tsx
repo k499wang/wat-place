@@ -20,7 +20,7 @@ interface SelectedPixel {
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
-  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
+  const [selectedColor, setSelectedColor] = useState("#E50000"); // Red default
   const [selectedPixels, setSelectedPixels] = useState<SelectedPixel[]>([]);
   const [placingPixels, setPlacingPixels] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);

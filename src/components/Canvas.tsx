@@ -34,6 +34,10 @@ export default function Canvas({
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [mouseDownPos, setMouseDownPos] = useState<{ x: number; y: number } | null>(null);
 
+  // Touch state
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [lastPinchDistance, setLastPinchDistance] = useState<number | null>(null);
+
   // Calculate what the centered offset would be for a given zoom level
   const getCenteredOffset = useCallback((zoomLevel: number) => {
     const canvas = canvasRef.current;
@@ -216,6 +220,94 @@ export default function Canvas({
     setMouseDownPos(null);
   };
 
+  // Touch handlers for mobile
+  const getTouchDistance = (touches: React.TouchList) => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const getTouchCenter = (touches: React.TouchList) => {
+    if (touches.length < 2) {
+      return { x: touches[0].clientX, y: touches[0].clientY };
+    }
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2,
+      y: (touches[0].clientY + touches[1].clientY) / 2,
+    };
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      // Single touch - prepare for pan or tap
+      const touch = e.touches[0];
+      setTouchStart({ x: touch.clientX, y: touch.clientY });
+      setDragStart({ x: touch.clientX, y: touch.clientY });
+      setIsDragging(true);
+    } else if (e.touches.length === 2) {
+      // Two fingers - prepare for pinch zoom
+      setLastPinchDistance(getTouchDistance(e.touches));
+      setIsDragging(false);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault(); // Prevent page scroll
+
+    if (e.touches.length === 1 && isDragging && dragStart && offset) {
+      // Single finger pan
+      const touch = e.touches[0];
+      const dx = touch.clientX - dragStart.x;
+      const dy = touch.clientY - dragStart.y;
+      setOffset({ x: offset.x + dx, y: offset.y + dy });
+      setDragStart({ x: touch.clientX, y: touch.clientY });
+    } else if (e.touches.length === 2 && lastPinchDistance !== null && offset) {
+      // Pinch zoom
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const newDistance = getTouchDistance(e.touches);
+      const center = getTouchCenter(e.touches);
+      const rect = canvas.getBoundingClientRect();
+      const centerX = center.x - rect.left;
+      const centerY = center.y - rect.top;
+
+      const scale = newDistance / lastPinchDistance;
+      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom * scale));
+      const zoomRatio = newZoom / zoom;
+
+      setOffset({
+        x: centerX - (centerX - offset.x) * zoomRatio,
+        y: centerY - (centerY - offset.y) * zoomRatio,
+      });
+      setZoom(newZoom);
+      setLastPinchDistance(newDistance);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    // Check if it was a tap (no significant movement)
+    if (touchStart && e.changedTouches.length === 1) {
+      const touch = e.changedTouches[0];
+      const dx = Math.abs(touch.clientX - touchStart.x);
+      const dy = Math.abs(touch.clientY - touchStart.y);
+
+      if (dx < 10 && dy < 10) {
+        // It's a tap - place pixel
+        const coords = screenToCanvas(touch.clientX, touch.clientY);
+        if (coords) {
+          onPixelClick(coords.x, coords.y);
+        }
+      }
+    }
+
+    setIsDragging(false);
+    setDragStart(null);
+    setTouchStart(null);
+    setLastPinchDistance(null);
+  };
+
   // Zoom with mouse wheel - zoom toward mouse position
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
@@ -293,6 +385,10 @@ export default function Canvas({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{ touchAction: 'none' }}
         />
       </div>
 
