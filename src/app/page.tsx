@@ -260,6 +260,25 @@ export default function Home() {
                     style={{ backgroundColor: color }}
                   />
                 ))}
+                {/* Custom color picker */}
+                <label
+                  className={`color-swatch relative cursor-pointer overflow-hidden ${
+                    !COLORS.includes(selectedColor) ? 'selected' : ''
+                  }`}
+                  style={{
+                    background: !COLORS.includes(selectedColor)
+                      ? selectedColor
+                      : 'conic-gradient(from 0deg, red, yellow, lime, aqua, blue, magenta, red)'
+                  }}
+                  title="Custom color"
+                >
+                  <input
+                    type="color"
+                    value={selectedColor}
+                    onChange={(e) => setSelectedColor(e.target.value.toUpperCase())}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                </label>
               </div>
 
               {/* Place button */}
