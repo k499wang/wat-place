@@ -25,6 +25,7 @@ export default function Home() {
   const [placingPixels, setPlacingPixels] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isClosingPicker, setIsClosingPicker] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginMessage, setLoginMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -92,7 +93,13 @@ export default function Home() {
     setPlacingPixels(false);
   };
 
-  const handleClear = () => setSelectedPixels([]);
+  const handleClear = () => {
+    setIsClosingPicker(true);
+    setTimeout(() => {
+      setSelectedPixels([]);
+      setIsClosingPicker(false);
+    }, 250);
+  };
 
   const handleRemovePixel = (index: number) => {
     setSelectedPixels(prev => prev.filter((_, i) => i !== index));
@@ -210,8 +217,8 @@ export default function Home() {
       )}
 
       {/* Color Picker Panel */}
-      {selectedPixels.length > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 animate-slide-up">
+      {(selectedPixels.length > 0 || isClosingPicker) && (
+        <div className={`absolute bottom-0 left-0 right-0 ${isClosingPicker ? 'animate-slide-down' : 'animate-slide-up'}`}>
           <div className="max-w-lg mx-auto p-3">
             <div className="panel p-4">
               {/* Selected pixels row */}

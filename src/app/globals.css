@@ -103,6 +103,17 @@ body {
   }
 }
 
+@keyframes slide-down {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -123,6 +134,10 @@ body {
 
 .animate-slide-up {
   animation: slide-up 0.25s ease-out;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.25s ease-out forwards;
 }
 
 .animate-fade-in {
